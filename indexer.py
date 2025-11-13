@@ -3,6 +3,7 @@ from nltk.stem import PorterStemmer # for better textual matches
 import re
 import os
 import json
+import glob #to find pathnames
 from pathlib import Path
 
 class Posting:
@@ -45,17 +46,15 @@ def get_tokens_w_weights(html):
 # use posting class, update the attributes for each token
 # create dict for token, posting 
 # return dict 
-def make_inverted_partial_index(folderpath, out_file, docs_seen=3000):
-    index = {} #{doc_id: posting}
+def make_inverted_index(folderpath, out_folder):
+    index = {} 
     doc_id = 0
-    partial_id = 0
-    num_partials = 0
 
     folder = Path(folderpath)
-    out_file = Path(out_file)
-    out_file.mkdir(parents=True, exist_ok=True)
+    out_folder = Path(out_folder)
+    out_folder.mkdir(parents=True, exist_ok=True)
     
-    docmap_path = out_file / "docmap.tsv"
+    docmap_path = out_folder / "docmap.tsv"
 
     with open(docmap_path, "w", encoding="utf-8") as docmap:
 
@@ -83,7 +82,7 @@ def make_inverted_partial_index(folderpath, out_file, docs_seen=3000):
                     doc_id += 1
                     continue
 
-                #how many times see stem, raw cont, stem ->count
+                #how many times see stem, raw countt, stem ->count
                 freq_map = {}
 
                 #total weight from stem, stem -> total imp weight
@@ -111,63 +110,28 @@ def make_inverted_partial_index(folderpath, out_file, docs_seen=3000):
                     posting.term_weight += weight_map[stem]
                 
                 doc_id += 1
-
-                #flushing
-                if doc_id % docs_seen == 0:
-                    write_partial_json(index, partial_id, out_file)
-                    index.clear()
-                    partial_id += 1
-                    num_partials += 1
-            
-        #if after loop still terms in index, rellease contents one last time
-        if index:
-            write_partial_json(index, partial_id, out_file)
-            index.clear()   
-            partial_id += 1
-            num_partials += 1
     
-    summary_path = out_file / "summary.json"
-    total_docs = doc_id
-
-    data = {
-        "num_documents" : total_docs,
-        "num_partials": num_partials,
-        "created_every_num of_docs": docs_seen
-    }
-    
-    with open(summary_path, "w", encoding="utf-8") as file:
-        json.dump(data, file, ensure_ascii=False, indent=2)
-
-    print("Index Done Building")
-    print(f"Indexed Docs: {total_docs}")
-    print(f"Num of partial indexs: {num_partials}")
-
-    return total_docs, num_partials
-
-def write_partial_json(index_block, partial_index, out_dir):
-    out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-
+    invert_index_path = out_folder / "inverted_index.json"
     postings_obj_map = {}
 
-    for term, postings_dict in index_block.items():
+    for term, postings_dict in  index.items():
         postings_obj_map[term] = [p.post_report() for p in postings_dict.values()]
 
-    out_path = out_dir / f"partial_{partial_index}.json"
-
-    with open(out_path, "w", encoding="utf-8") as file:
+    with open(invert_index_path, "w", encoding="utf-8") as file:
         json.dump(postings_obj_map, file, ensure_ascii=False, indent=2)
 
-    print(f"Current parsed pages sent to {out_path} with {len(postings_obj_map)} terms")
+    
+    print("Indexing Done")
 
-
-
+    return doc_id, index
     
 # ADD FUNCTION: to write results into txt or json file (later put into pdf)
 # the number of indexed documents;
 # the number of unique tokens;
 # the total size (in KB) of your index on disk.
 # return all the above 
+def m1_analytics(out_folder, num_docs, index):
+    pass
 
 
 def main():
