@@ -21,7 +21,7 @@ class Posting:
 
 stemmer = PorterStemmer()
 BODY_WEIGHT = 1.0
-IMPROTANT_WEIGHT = 2.0
+IMPORTANT_WEIGHT = 2.0
 
 def get_tokens_w_weights(html):
     tokens = []
@@ -36,7 +36,7 @@ def get_tokens_w_weights(html):
     for tags in soup.find_all(['strong', 'b', 'title', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
         for t in re.findall(r'\b[a-zA-Z0-9]+\b', tags.get_text().lower()):
             stem = stemmer.stem(t)
-            tokens.append((stem, IMPROTANT_WEIGHT))
+            tokens.append((stem, IMPORTANT_WEIGHT))
         
     return tokens
 
@@ -45,17 +45,17 @@ def get_tokens_w_weights(html):
 # use posting class, update the attributes for each token
 # create dict for token, posting 
 # return dict 
-def make_inverted__partial_index(folderpath, out_file, docs_seen=3000):
+def make_inverted_partial_index(folderpath, out_file, docs_seen=3000):
     index = {} #{doc_id: posting}
     doc_id = 0
     partial_id = 0
     num_partials = 0
 
     folder = Path(folderpath)
-    out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = Path(out_file)
+    out_file.mkdir(parents=True, exist_ok=True)
     
-    docmap_path = out_dir / "docmap.tsv"
+    docmap_path = out_file / "docmap.tsv"
 
     with open(docmap_path, "w", encoding="utf-8") as docmap:
 
@@ -114,18 +114,19 @@ def make_inverted__partial_index(folderpath, out_file, docs_seen=3000):
 
                 #flushing
                 if doc_id % docs_seen == 0:
-                    #define parital write
+                    write_partial_json(index, partial_id, out_file)
                     index.clear()
                     partial_id += 1
                     num_partials += 1
             
+        #if after loop still terms in index, rellease contents one last time
         if index:
-            #define partial write
+            write_partial_json(index, partial_id, out_file)
             index.clear()   
             partial_id += 1
             num_partials += 1
     
-    summary_path = out_dir / "summary.json"
+    summary_path = out_file / "summary.json"
     total_docs = doc_id
 
     data = {
@@ -147,12 +148,19 @@ def write_partial_json(index_block, partial_index, out_dir):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    parse = {}
+    postings_obj_map = {}
 
     for term, postings_dict in index_block.items():
-        parse[term] = [p.post_report() for p in postings_dict.values()]
+        postings_obj_map[term] = [p.post_report() for p in postings_dict.values()]
 
     out_path = out_dir / f"partial_{partial_index}.json"
+
+    with open(out_path, "w", encoding="utf-8") as file:
+        json.dump(postings_obj_map, file, ensure_ascii=False, indent=2)
+
+    print(f"Current parsed pages sent to {out_path} with {len(postings_obj_map)} terms")
+
+
 
     
 # ADD FUNCTION: to write results into txt or json file (later put into pdf)
