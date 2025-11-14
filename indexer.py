@@ -3,7 +3,6 @@ from nltk.stem import PorterStemmer # for better textual matches
 import re
 import os
 import json
-import glob #to find pathnames
 from pathlib import Path
 
 class Posting:
@@ -35,7 +34,7 @@ def get_tokens_w_weights(html):
     
     # important tags: bold, titles, headers
     for tags in soup.find_all(['strong', 'b', 'title', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
-        for t in re.findall(r'\b[a-zA-Z0-9]+\b', tags.get_text().lower()):
+        for t in re.findall(r'\b[a-zA-Z0-9]+\b', tags.get_text(" ", strip=True).lower()):
             stem = stemmer.stem(t)
             tokens.append((stem, IMPORTANT_WEIGHT))
         
@@ -131,15 +130,40 @@ def make_inverted_index(folderpath, out_folder):
 # the total size (in KB) of your index on disk.
 # return all the above 
 def m1_analytics(out_folder, num_docs, index):
-    pass
+    out_folder = Path(out_folder)
+
+    num_unique_tokens = len(index)
+
+    index_path = out_folder / "inverted_index.json"
+    docmap_path = out_folder / "docmap.tsv"
+
+    total_bytes = 0
+    for p in [index_path, docmap_path]:
+        if p.exists():
+            total_bytes += p.stat().st_size
+    
+    total_kb = round(total_bytes / 1024, 2)
+
+    report_path = out_folder / "m1_report.txt"
+
+    with open(report_path, "w", encoding="utf-8") as file:
+        file.write(
+            f"Number of Indexed Documents: {num_docs}\n"
+            f"Number of Unique tokens: {num_unique_tokens}\n"
+            f"Index size  on disk: {total_kb} KB\n"
+        )
 
 
 def main():
     # ask for input or hard code the path of folder
     # if does not exist then raise error or print message
-
     # call rest of functions 
-    pass
+    input_folder = "/home/ebivian/CS121/HW3/CS121-HW3/DEV"
+    output_folder = "/home/ebivian/CS121/HW3/CS121-HW3/M1"
+
+    num_docs, index = make_inverted_index(input_folder, output_folder)
+
+    m1_analytics(output_folder, num_docs, index)
 
 if __name__ == "__main__":
     main() # to run everything
