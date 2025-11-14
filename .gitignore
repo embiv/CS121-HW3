@@ -1,0 +1,5 @@
+#ignore M1 large outputs
+M1/inverted_index.json
+
+#if inverted_index anywhere ignore it too
+inverted_index.json
