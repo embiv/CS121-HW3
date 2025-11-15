@@ -25,7 +25,7 @@ IMPORTANT_WEIGHT = 2.0
 
 def get_tokens_w_weights(html):
     tokens = []
-    soup = BeautifulSoup(html, "lxml")
+    soup = BeautifulSoup(html, "html.parser")
     
     normal_text = soup.get_text(" ", strip=True)
     for t in re.findall(r'\b[a-zA-Z0-9]+\b', normal_text.lower()):

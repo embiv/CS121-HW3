@@ -1,5 +1,7 @@
 #ignore M1 large outputs
 M1/inverted_index.json
+M1/docmap.tsv
 
 #if inverted_index anywhere ignore it too
 inverted_index.json
+
