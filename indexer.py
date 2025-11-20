@@ -14,7 +14,7 @@ class Posting:
     
     def post_report(self):
         report = {
-        "doc_id": self.doc_id, "url": self.url, 
+        "doc_id": self.doc_id,
         "term frequency": self.term_freq, "term weight (importance)": self.term_weight
         }
         return report
