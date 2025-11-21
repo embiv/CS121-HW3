@@ -2,6 +2,8 @@
 M1/inverted_index.json
 M1/docmap.tsv
 
+SMALLM1/
+PARTIALM1/
 #if inverted_index anywhere ignore it too
 inverted_index.json
 

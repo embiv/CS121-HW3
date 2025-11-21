@@ -4,6 +4,7 @@ import re
 import os
 import json
 from pathlib import Path
+import string
 
 class Posting:
     def __init__(self,url,doc_id):
@@ -45,8 +46,20 @@ def get_tokens_w_weights(html):
 # use posting class, update the attributes for each token
 # create dict for token, posting 
 # return dict 
-def make_inverted_index(folderpath, out_folder):
-    index = {} 
+
+# partitions while be a-z and other
+PARTITIONS = list(string.ascii_lowercase) + ["other"]
+
+#helps show which partial file to look at
+def get_partition(token):
+    if not token:
+        return "other"
+    char = token[0].lower()
+    return char if char in string.ascii_lowercase else "other"
+
+def make_partial_inverted_indexes(folderpath, out_folder):
+    #will be sorted by alphabet(a-z) or other
+    partial_index = {p: {} for p in PARTITIONS} 
     doc_id = 0
 
     folder = Path(folderpath)
@@ -94,8 +107,11 @@ def make_inverted_index(folderpath, out_folder):
                     #give current weight of stem, if doesnt exist treat as 0, add given weight 
                     weight_map[stem] = weight_map.get(stem, 0.0) + weight
 
-                #put info into global inverted index
+                #put info into partial inverted index
                 for stem in freq_map:
+                    part = get_partition(stem)
+                    index = partial_index[part]
+
                     if stem not in index:
                         index[stem] = {}
                     
@@ -110,37 +126,49 @@ def make_inverted_index(folderpath, out_folder):
                 
                 doc_id += 1
     
-    invert_index_path = out_folder / "inverted_index.json"
-    postings_obj_map = {}
+    for part, index in partial_index.items():
+        postings_obj_map = {}
 
-    for term, postings_dict in  index.items():
-        postings_obj_map[term] = [p.post_report() for p in postings_dict.values()]
+        for term, postings_dict in index.items():
+            sorted_postings = sorted(postings_dict.values(), key=lambda p: p.doc_id)
+            postings_obj_map[term] = [p.post_report() for p in sorted_postings]
+        
+        if not postings_obj_map:
+            continue
 
-    with open(invert_index_path, "w", encoding="utf-8") as file:
-        json.dump(postings_obj_map, file, ensure_ascii=False, indent=2)
+        #sort terms alpabetically in each partial index
+        postings_obj_map = dict(sorted(postings_obj_map.items()))
+
+        invert_index_path = out_folder / f"inverted_index_{part}.json"
+    
+        with open(invert_index_path, "w", encoding="utf-8") as file:
+            json.dump(postings_obj_map, file, ensure_ascii=False, indent=2)
 
     
     print("Indexing Done")
 
-    return doc_id, index
+    return doc_id, partial_index
     
 # ADD FUNCTION: to write results into txt or json file (later put into pdf)
 # the number of indexed documents;
 # the number of unique tokens;
 # the total size (in KB) of your index on disk.
 # return all the above 
-def m1_analytics(out_folder, num_docs, index):
+def m1_analytics(out_folder, num_docs, partial_index):
     out_folder = Path(out_folder)
 
-    num_unique_tokens = len(index)
-
-    index_path = out_folder / "inverted_index.json"
-    docmap_path = out_folder / "docmap.tsv"
+    num_unique_tokens = sum(len(index_for_part) for index_for_part in partial_index.values())
 
     total_bytes = 0
-    for p in [index_path, docmap_path]:
-        if p.exists():
-            total_bytes += p.stat().st_size
+
+    for part in PARTITIONS:
+        index_path = out_folder / f"inverted_index_{part}.json"
+        if index_path.exists():
+            total_bytes += index_path.stat().st_size
+    
+    docmap_path = out_folder / "docmap.tsv"    
+    if docmap_path.exists():
+        total_bytes += docmap_path.stat().st_size
     
     total_kb = round(total_bytes / 1024, 2)
 
@@ -150,7 +178,7 @@ def m1_analytics(out_folder, num_docs, index):
         file.write(
             f"Number of Indexed Documents: {num_docs}\n"
             f"Number of Unique tokens: {num_unique_tokens}\n"
-            f"Index size  on disk: {total_kb} KB\n"
+            f"Index size  on disk (partials and docmap): {total_kb} KB\n"
         )
 
 
@@ -159,11 +187,11 @@ def main():
     # if does not exist then raise error or print message
     # call rest of functions 
     input_folder = "/home/ebivian/CS121/HW3/CS121-HW3/DEV"
-    output_folder = "/home/ebivian/CS121/HW3/CS121-HW3/M1"
+    output_folder = "/home/ebivian/CS121/HW3/CS121-HW3/PARTIALM1"
 
-    num_docs, index = make_inverted_index(input_folder, output_folder)
+    num_docs, partial_index = make_partial_inverted_indexes(input_folder, output_folder)
 
-    m1_analytics(output_folder, num_docs, index)
+    m1_analytics(output_folder, num_docs, partial_index)
 
 if __name__ == "__main__":
     main() # to run everything
