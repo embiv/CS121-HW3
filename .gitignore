@@ -7,3 +7,4 @@ PARTIALM1/
 #if inverted_index anywhere ignore it too
 inverted_index.json
 
+__pycache__/
