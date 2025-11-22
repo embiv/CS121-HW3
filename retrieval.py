@@ -140,7 +140,7 @@ def print_and_only_data(query, num_urls_to_show = 5):
 
 
 def ret_main():
-    print("Type a search query and press Enter key.")
+    print("\nType a search query and press Enter key.")
     print("Type 'quit' or 'exit' to leave.")
 
     while True:
