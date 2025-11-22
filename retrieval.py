@@ -1,6 +1,4 @@
 import json
-import sys
-import os
 from indexer import get_partition #useful to find out which inverted_index_*.json to use 
 from nltk.stem import PorterStemmer # for better textual matches
 from pathlib import Path
@@ -30,7 +28,10 @@ stemmer = PorterStemmer()
 def load_docmap():
     with open(DOCMAP_PATH, "r", encoding="utf-8") as f:
         for line in f:
-            doc_id, url = line.strip().split("\t")
+            line = line.strip()
+            if not line:
+                continue
+            doc_id, url = line.strip().split("\t", 1)
             DOC_INDEX[int(doc_id)] = url
 
 
@@ -50,7 +51,7 @@ def load_partial(partial):
     if partial in loaded_partials:
         return loaded_partials[partial]
 
-    filename = INDEX_SET_FOLDER / f"{PARTIAL_INDEX_START}{part}.json"
+    filename = INDEX_SET_FOLDER / f"{PARTIAL_INDEX_START}{partial}.json" #change part to partial
     if not filename.exists():
         loaded_partials[partial] = {}
         return loaded_partials[partial]
@@ -72,7 +73,7 @@ def get_postings(stem_term):
 #uses the terms from process query
 #uses get postings
 #can probobly use .intersection?
-def and_only_search(query):
+def and_only_search(query): #should we change this to say w_ranking
     stems = normalize_query(query)
 
     # get postings
@@ -103,11 +104,11 @@ def and_only_search(query):
     for doc_id in common_docs:
         score = 0.0
         for stem in stems:
-            posting = postings[stem][doc_id]
+            posting = posting_map[stem][doc_id] #think use posting_map not postings
             tf = posting["term frequency"]
             weight = posting["term weight (importance)"]
 
-            df = len(postings[stem]) # doc freq
+            df = len(posting_map[stem]) # doc freq
             idf = math.log((N+1)/(df+1)) + 1 
 
             score += (tf*idf* (1+weight))
@@ -135,7 +136,7 @@ def print_and_only_data(query, num_urls_to_show = 5):
     
     print("\nTop 5 Results")
     for doc_id, score in results[:num_urls_to_show]:
-        print(f"{score} - {doc_id_made_url(doc_id)}")
+        print(f"{score:.3f} - {doc_id_made_url(doc_id)}")
 
 
 def ret_main():
@@ -154,6 +155,7 @@ def ret_main():
             continue
 
         if query.lower() in {"quit", "exit"}:
+            print("\nQuitting Search Engine.")
             break
 
         if query:
