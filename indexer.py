@@ -24,21 +24,36 @@ stemmer = PorterStemmer()
 BODY_WEIGHT = 1.0
 IMPORTANT_WEIGHT = 2.0
 
+# deals with broken html (i hope)
 def get_tokens_w_weights(html):
     tokens = []
-    soup = BeautifulSoup(html, "html.parser")
     
-    normal_text = soup.get_text(" ", strip=True)
+    try:
+        soup = BeautifulSoup(html, "html.parser")
+    except Exception as e:
+        return [] # parsing failed
+    
+    try:
+        normal_text = soup.get_text(" ", strip=True)
+    except Exception:
+        normal_text = ""
+    
+    
     for t in re.findall(r'\b[a-zA-Z0-9]+\b', normal_text.lower()):
         stem = stemmer.stem(t)
         tokens.append((stem, BODY_WEIGHT)) # token w weight
     
     # important tags: bold, titles, headers
-    for tags in soup.find_all(['strong', 'b', 'title', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
+    try:
+        imp_tags = soup.find_all(['strong', 'b', 'title', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
+    except Exception:
+        important_tags = []
+    
+    for tags in imp_tags:
         for t in re.findall(r'\b[a-zA-Z0-9]+\b', tags.get_text(" ", strip=True).lower()):
             stem = stemmer.stem(t)
             tokens.append((stem, IMPORTANT_WEIGHT))
-        
+    
     return tokens
 
 # ADD FUNCTION: inverted index() w path parameter
@@ -88,6 +103,8 @@ def make_partial_inverted_indexes(folderpath, out_folder):
 
                 #get (token_stem, weight) from HTML
                 token_weights = get_tokens_w_weights(html)
+                if token_weights is None:
+                    continue
                 
                 if not token_weights:
                     #count document even if empty

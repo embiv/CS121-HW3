@@ -3,6 +3,7 @@ from indexer import get_partition #useful to find out which inverted_index_*.jso
 from nltk.stem import PorterStemmer # for better textual matches
 from pathlib import Path
 import math
+import time
 
 # path of index data
 BASE_DIRECTORY = Path(__file__).parent.resolve()
@@ -74,6 +75,7 @@ def get_postings(stem_term):
 #uses get postings
 #can probobly use .intersection?
 def and_only_search(query): #should we change this to say w_ranking
+    start = time.perf_counter() # start time
     stems = normalize_query(query)
 
     # get postings
@@ -82,7 +84,8 @@ def and_only_search(query): #should we change this to say w_ranking
         posting_lists.append(get_postings(s))
     
     if any(len(p) == 0 for p in posting_lists):
-        return [] # no postings 
+        print(f"Search time: {(time.perf_counter()-start) * 1000:.2f} ms")
+        return [] # no postings / end time
     
     docs = []
     posting_map = {} # doc_id : posting info
@@ -95,7 +98,8 @@ def and_only_search(query): #should we change this to say w_ranking
     common_docs = set.intersection(*docs)
 
     if not common_docs:
-        return []
+        print(f"Search time: {(time.perf_counter()-start) * 1000:.2f} ms")
+        return [] # end time 
     
     # ranking TF-IDF
     results = []
@@ -116,6 +120,9 @@ def and_only_search(query): #should we change this to say w_ranking
     
     # descending order
     results.sort(key=lambda x: x[1], reverse=True)
+
+    end = time.perf_counter() # query found and final end time
+    print(f"Search time: {(end-start) * 1000:.2f} ms")
     return results
     
 

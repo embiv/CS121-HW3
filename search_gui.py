@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-
+import time
 import retrieval
 
 class SearchGUI:
@@ -41,6 +41,8 @@ class SearchGUI:
 
 
     def searching(self, event=None):
+
+        
         search_query = self.query.get().strip()
         if not search_query:
             self.status.set("Please type a Search Query")
@@ -49,7 +51,10 @@ class SearchGUI:
         self.status.set(f"Searching for : {search_query!r} ...")
         self.root.update_idletasks()
 
+        start = time.perf_counter()
         results = retrieval.and_only_search(search_query)
+        end = time.perf_counter()
+        elaspsed_ms = (end-start) * 1000 # query response time
 
         self.results.delete("1.0", tk.END)
 
@@ -66,7 +71,9 @@ class SearchGUI:
             self.results.insert(tk.END,
                                 f"{rank}. Score: {score:.3f}\n URL: {url}\n\n")
         
-        self.status.set(f"Found {len(results)} result(s). Showing TOP {min(top_links, len(results))}.")
+        self.status.set(f"Found {len(results)} result(s). Showing TOP {min(top_links, len(results))}."
+                        f"Search time: {elapsed_ms:.1f} ms"
+        )
 
 if __name__ == "__main__":
     root = tk.Tk()
