@@ -72,7 +72,7 @@ class SearchGUI:
                                 f"{rank}. Score: {score:.3f}\n URL: {url}\n\n")
         
         self.status.set(f"Found {len(results)} result(s). Showing TOP {min(top_links, len(results))}."
-                        f"Search time: {elapsed_ms:.1f} ms"
+                        f"Search time: {elaspsed_ms:.1f} ms"
         )
 
 if __name__ == "__main__":
