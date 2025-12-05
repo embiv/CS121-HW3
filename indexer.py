@@ -27,6 +27,12 @@ IMPORTANT_WEIGHT = 2.0
 # deals with broken html (i hope)
 def get_tokens_w_weights(html):
     tokens = []
+    if not isinstance(html, str):
+        return []
+    
+    stripped = html.strip()
+    if not stripped or stripped.startswith("http://") or stripped.startswith("https://"):
+        return []
     
     try:
         soup = BeautifulSoup(html, "html.parser")
@@ -203,8 +209,8 @@ def main():
     # ask for input or hard code the path of folder
     # if does not exist then raise error or print message
     # call rest of functions 
-    input_folder = "/home/ebivian/CS121/HW3/CS121-HW3/DEV"
-    output_folder = "/home/ebivian/CS121/HW3/CS121-HW3/PARTIALM1"
+    input_folder = "/home/ecasasca/cs121/a3/CS121-HW3/DEV"
+    output_folder = "/home/ecasasca/cs121/a3/CS121-HW3/PARTIALM1"
 
     num_docs, partial_index = make_partial_inverted_indexes(input_folder, output_folder)
 

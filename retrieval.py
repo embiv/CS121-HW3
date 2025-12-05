@@ -9,7 +9,7 @@ import time
 BASE_DIRECTORY = Path(__file__).parent.resolve()
 
 #folder path
-INDEX_SET_FOLDER = BASE_DIRECTORY / "index_data" #should make a folder named "index_data" that had the doc_map.tsv and the partials
+INDEX_SET_FOLDER = BASE_DIRECTORY / "PARTIALM1" #should make a folder named "index_data" that had the doc_map.tsv and the partials
 
 #folder path to get the doc map
 DOCMAP_PATH = INDEX_SET_FOLDER / "docmap.tsv"

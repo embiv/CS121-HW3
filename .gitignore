@@ -1,9 +1,12 @@
 #ignore M1 large outputs
 M1/inverted_index.json
 M1/docmap.tsv
+PARTIALM1/
 
+#ignore M1 small outputs
 SMALLM1/
 index_data/
+
 #if inverted_index anywhere ignore it too
 inverted_index.json
 m1_report.txt
