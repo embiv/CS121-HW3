@@ -20,7 +20,7 @@ class SearchGUI:
         self.query_entry = ttk.Entry(query_frame, textvariable=self.query, width=60)
         self.query_entry.pack(side="left", fill="x", expand=True)
 
-        self.query_entry.bind("<Return>", self.on_search)
+        self.query_entry.bind("<Return>", self.searching)
 
         self.search_bttn = ttk.Button(query_frame, text="Search", command=self.searching)
         self.search_bttn.pack(side="left", padx=5)
@@ -42,10 +42,10 @@ class SearchGUI:
 
     def searching(self, event=None):
 
-        
         search_query = self.query.get().strip()
         if not search_query:
-            self.status.set("Please type a Search Query")
+            self.results.insert(tk.END, "No results found :(\n")
+            self.status.set("Not a valid query. Please type a Search Query")
             return
         
         self.status.set(f"Searching for : {search_query!r} ...")
@@ -71,7 +71,8 @@ class SearchGUI:
             self.results.insert(tk.END,
                                 f"{rank}. Score: {score:.3f}\n URL: {url}\n\n")
         
-        self.status.set(f"Found {len(results)} result(s). Showing TOP {min(top_links, len(results))}."
+        self.status.set(f"Query: {search_query} | "
+                        f"Found {len(results)} result(s). Showing TOP {min(top_links, len(results))}."
                         f"Search time: {elaspsed_ms:.1f} ms"
         )
 

@@ -6,7 +6,11 @@ from nltk.stem import PorterStemmer # for better textual matches
 from pathlib import Path
 import math
 import time
-import resource
+try:
+    import resource
+except ImportError:
+    resource = None
+
 from collections import OrderedDict
 
 # path of index data
@@ -209,8 +213,11 @@ def ret_main():
         if query:
             print_and_only_data(query)
     
-    usage_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    print(f"\nPeak Memory Used:{usage_kb:,} KB")
+    if resource is not None:
+        usage_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        print(f"\nPeak Memory Used: {usage_kb:,} KB")
+    else:
+        usage_kb = 0
 
 if __name__ == "__main__":
     load_docmap()
