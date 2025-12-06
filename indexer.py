@@ -265,11 +265,12 @@ def main():
     # ask for input or hard code the path of folder
     # if does not exist then raise error or print message
     # call rest of functions 
-    #input_folder = "/home/ecasasca/cs121/a3/CS121-HW3/DEV"
-    #output_folder = "/home/ecasasca/cs121/a3/CS121-HW3/PARTIALM1"
+    
+    input_folder = "/home/ecasasca/cs121/a3/CS121-HW3/DEV"
+    output_folder = "/home/ecasasca/cs121/a3/CS121-HW3/PARTIALM1"
 
-    input_folder = "/home/ebivian/CS121/HW3/CS121-HW3/DEV"
-    output_folder = "/home/ebivian/CS121/HW3/CS121-HW3/PARTIALM1"
+    # input_folder = "/home/ebivian/CS121/HW3/CS121-HW3/DEV"
+    # output_folder = "/home/ebivian/CS121/HW3/CS121-HW3/PARTIALM1"
 
     num_docs, num_runs = make_partial_inverted_indexes(input_folder, output_folder, BATCHSIZE)
 

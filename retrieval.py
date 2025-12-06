@@ -1,4 +1,5 @@
 import json
+import re
 from indexer import get_partition #useful to find out which inverted_index_*.json to use 
 from nltk.stem import PorterStemmer # for better textual matches
 from pathlib import Path
@@ -24,6 +25,7 @@ loaded_partials = {}
 DOC_INDEX = {}
 
 stemmer = PorterStemmer()
+TOKEN_RE = re.compile(r'\b[a-zA-Z0-9]+\b')
 
 # make the load_docmap so mapping is made into dictionary
 def load_docmap():
@@ -40,11 +42,13 @@ def load_docmap():
 #assume use of PORTERSTEMMER so get the same tokens
 #return lis of stems?
 def normalize_query(q):
-    tokens = []
-    for token in q.lower().split():
-        stem = stemmer.stem(token)
-        tokens.append(stem)
-    return tokens
+    # tokens = []
+    # for token in q.lower().split():
+    #     stem = stemmer.stem(token)
+    #     tokens.append(stem)
+    # return tokens
+    tokens = TOKEN_RE.findall(q.lower())
+    return [stemmer.stem(t) for t in tokens]
 
 
 #load relevant partial to loaded_partials
@@ -65,9 +69,22 @@ def load_partial(partial):
 #get the postings, takes a token/stem
 # use get partiton, checks the first char to spit out inverted_index_*
 def get_postings(stem_term):
-    part = get_partition(stem_term)
-    partial_index = load_partial(part)
+    # part = get_partition(stem_term)
+    # partial_index = load_partial(part)
 
+    # return partial_index.get(stem_term, [])
+
+    part = get_partition(stem_term)
+    if part in loaded_partials:
+        partial_index = loaded_partials[part]
+    else:
+        filename = INDEX_SET_FOLDER / f"{PARTIAL_INDEX_START}{part}.json"
+        if filename.exists():
+            with open(filename, "r", encoding="utf-8") as f:
+                partial_index = json.load(f)
+        else:
+            partial_index = {}
+        loaded_partials[part] = partial_index
     return partial_index.get(stem_term, [])
 
 #and only query
@@ -94,6 +111,11 @@ def and_only_search(query): #should we change this to say w_ranking
         posting_map[stem] = stem_dict
         docs.append(set(stem_dict.keys()))
     
+    posting_lists.sort(key=len)
+    common_docs = posting_lists[0].copy()
+    for s in posting_lists[1:]:
+        common_docs.intersection_update(s)
+    
     # AND intersections
     common_docs = set.intersection(*docs)
 
@@ -104,6 +126,7 @@ def and_only_search(query): #should we change this to say w_ranking
     # ranking TF-IDF
     results = []
     N = len(DOC_INDEX)
+    idf_map = {stem: math.log((N+1)/(len(posting_map[stem])+1)) + 1 for stem in stems}
 
     for doc_id in common_docs:
         score = 0.0
