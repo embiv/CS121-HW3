@@ -53,7 +53,7 @@ def get_tokens_w_weights(html):
     try:
         imp_tags = soup.find_all(['strong', 'b', 'title', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
     except Exception:
-        important_tags = []
+        imp_tags = []
     
     for tags in imp_tags:
         for t in re.findall(r'\b[a-zA-Z0-9]+\b', tags.get_text(" ", strip=True).lower()):
@@ -69,7 +69,7 @@ def get_tokens_w_weights(html):
 # return dict 
 
 # partitions while be a-z and other
-PARTITIONS = list(string.ascii_lowercase) + ["other"]
+PARTITIONS = ["other"] + list(string.ascii_lowercase) + [a + b for a in string.ascii_lowercase for b in string.ascii_lowercase]
 
 BATCHSIZE = 10000
 
@@ -77,8 +77,22 @@ BATCHSIZE = 10000
 def get_partition(token):
     if not token:
         return "other"
-    char = token[0].lower()
-    return char if char in string.ascii_lowercase else "other"
+    
+    token = token.lower()
+    first = token[0]
+
+    if first not in string.ascii_lowercase:
+        return "other"
+    
+    if len(token) == 1:
+        return token[0]
+    
+    second = token[1]
+
+    if second not in string.ascii_lowercase:
+        return first
+
+    return first + second
 
 def flush_partial_index(partial_index, out_folder, run_id):
     out_folder = Path(out_folder)
@@ -97,7 +111,7 @@ def flush_partial_index(partial_index, out_folder, run_id):
 
         inverted_index_path = out_folder / f"inverted_index_{part}_run{run_id}.json"
         with open(inverted_index_path, "w", encoding="utf-8") as file:
-            json.dump(postings_obj_map, file, ensure_ascii=False, indent=2)
+            json.dump(postings_obj_map, file, ensure_ascii=False)
 
 def make_partial_inverted_indexes(folderpath, out_folder, batch_size):
     #will be sorted by alphabet(a-z) or other
@@ -224,7 +238,7 @@ def merge_partial_indexes(out_folder, num_runs):
 
         final_index_path = out_folder / f"inverted_index_{part}.json"
         with open(final_index_path, "w", encoding="utf-8") as f:
-            json.dump(merged, f, ensure_ascii=False, indent=2)
+            json.dump(merged, f, ensure_ascii=False)
 
 # ADD FUNCTION: to write results into txt or json file (later put into pdf)
 # the number of indexed documents;
@@ -266,11 +280,11 @@ def main():
     # if does not exist then raise error or print message
     # call rest of functions 
     
-    input_folder = "/home/ecasasca/cs121/a3/CS121-HW3/DEV"
-    output_folder = "/home/ecasasca/cs121/a3/CS121-HW3/PARTIALM1"
+    #input_folder = "/home/ecasasca/cs121/a3/CS121-HW3/DEV"
+    #output_folder = "/home/ecasasca/cs121/a3/CS121-HW3/PARTIALM1"
 
-    # input_folder = "/home/ebivian/CS121/HW3/CS121-HW3/DEV"
-    # output_folder = "/home/ebivian/CS121/HW3/CS121-HW3/PARTIALM1"
+    input_folder = "/home/ebivian/CS121/HW3/CS121-HW3/DEV"
+    output_folder = "/home/ebivian/CS121/HW3/CS121-HW3/PARTIALM1"
 
     num_docs, num_runs = make_partial_inverted_indexes(input_folder, output_folder, BATCHSIZE)
 

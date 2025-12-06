@@ -1,10 +1,13 @@
 import json
+import orjson
 import re
 from indexer import get_partition #useful to find out which inverted_index_*.json to use 
 from nltk.stem import PorterStemmer # for better textual matches
 from pathlib import Path
 import math
 import time
+import resource
+from collections import OrderedDict
 
 # path of index data
 BASE_DIRECTORY = Path(__file__).parent.resolve()
@@ -19,7 +22,8 @@ DOCMAP_PATH = INDEX_SET_FOLDER / "docmap.tsv"
 PARTIAL_INDEX_START = "inverted_index_"
 
 #acting as cache for partial indexes so dont have to look them up often
-loaded_partials = {}
+MAX_PARTIALS_IN_RAM = 3
+loaded_partials = OrderedDict()
 
 # make docmap dictionary for easy look up
 DOC_INDEX = {}
@@ -54,26 +58,31 @@ def normalize_query(q):
 #load relevant partial to loaded_partials
 def load_partial(partial):
     if partial in loaded_partials:
+        loaded_partials.move_to_end(partial)
         return loaded_partials[partial]
 
     filename = INDEX_SET_FOLDER / f"{PARTIAL_INDEX_START}{partial}.json" #change part to partial
     if not filename.exists():
         loaded_partials[partial] = {}
-        return loaded_partials[partial]
+    else:
+        with open(filename,"rb") as f:
+            loaded_partials[partial] = orjson.loads(f.read())
     
-    with open(filename,"r", encoding="utf-8") as f:
-        loaded_partials[partial] = json.load(f)
+    loaded_partials.move_to_end(partial)
+    if len(loaded_partials) > MAX_PARTIALS_IN_RAM:
+        evicted_part, _ = loaded_partials.popitem(last=False)
+
     return loaded_partials[partial]
 
 
 #get the postings, takes a token/stem
 # use get partiton, checks the first char to spit out inverted_index_*
 def get_postings(stem_term):
-    # part = get_partition(stem_term)
-    # partial_index = load_partial(part)
+    part = get_partition(stem_term)
+    partial_index = load_partial(part)
 
-    # return partial_index.get(stem_term, [])
-
+    return partial_index.get(stem_term, [])
+    '''
     part = get_partition(stem_term)
     if part in loaded_partials:
         partial_index = loaded_partials[part]
@@ -85,7 +94,7 @@ def get_postings(stem_term):
         else:
             partial_index = {}
         loaded_partials[part] = partial_index
-    return partial_index.get(stem_term, [])
+    return partial_index.get(stem_term, [])'''
 
 #and only query
 #uses the terms from process query
@@ -94,6 +103,10 @@ def get_postings(stem_term):
 def and_only_search(query): #should we change this to say w_ranking
     start = time.perf_counter() # start time
     stems = normalize_query(query)
+
+    if not stems:
+        print("Not a valid query")
+        return []
 
     # get postings
     posting_lists = []
@@ -110,7 +123,7 @@ def and_only_search(query): #should we change this to say w_ranking
         stem_dict = {p["doc_id"]: p for p in plist}
         posting_map[stem] = stem_dict
         docs.append(set(stem_dict.keys()))
-    
+    '''
     posting_lists.sort(key=len)
     common_docs = posting_lists[0].copy()
     for s in posting_lists[1:]:
@@ -118,6 +131,11 @@ def and_only_search(query): #should we change this to say w_ranking
     
     # AND intersections
     common_docs = set.intersection(*docs)
+    '''
+    docs.sort(key=len)
+    common_docs = docs[0].copy()
+    for s in docs[1:]:
+        common_docs.intersection_update(s)
 
     if not common_docs:
         print(f"Search time: {(time.perf_counter()-start) * 1000:.2f} ms")
@@ -135,8 +153,7 @@ def and_only_search(query): #should we change this to say w_ranking
             tf = posting["term frequency"]
             weight = posting["term weight (importance)"]
 
-            df = len(posting_map[stem]) # doc freq
-            idf = math.log((N+1)/(df+1)) + 1 
+            idf = idf_map[stem]
 
             score += (tf*idf* (1+weight))
         results.append((doc_id, score))
@@ -190,6 +207,9 @@ def ret_main():
 
         if query:
             print_and_only_data(query)
+    
+    usage_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    print(f"\nPeak Memory Used:{usage_kb:,} KB")
 
 if __name__ == "__main__":
     load_docmap()
