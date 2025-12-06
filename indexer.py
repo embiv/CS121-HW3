@@ -69,7 +69,8 @@ def get_tokens_w_weights(html):
 # return dict 
 
 # partitions while be a-z and other
-PARTITIONS = ["other"] + list(string.ascii_lowercase) + [a + b for a in string.ascii_lowercase for b in string.ascii_lowercase]
+letters = list(string.ascii_lowercase)
+PARTITIONS = ["other"] + letters + [a + b for a in letters for b in letters] + [a + b + c for a in letters for b in letters for c in letters]
 
 BATCHSIZE = 10000
 
@@ -79,20 +80,17 @@ def get_partition(token):
         return "other"
     
     token = token.lower()
-    first = token[0]
 
-    if first not in string.ascii_lowercase:
+    if token[0] not in string.ascii_lowercase:
         return "other"
     
-    if len(token) == 1:
+    if len(token) == 1 or token[1] not in string.ascii_letters:
         return token[0]
-    
-    second = token[1]
 
-    if second not in string.ascii_lowercase:
-        return first
+    if len(token) == 2 or token[2] not in string.ascii_letters:
+        return token[:2]
 
-    return first + second
+    return token[:3]
 
 def flush_partial_index(partial_index, out_folder, run_id):
     out_folder = Path(out_folder)

@@ -106,6 +106,7 @@ def and_only_search(query): #should we change this to say w_ranking
 
     if not stems:
         print("Not a valid query")
+        print(f"Search time: {(time.perf_counter()-start) * 1000:.2f} ms")
         return []
 
     # get postings
